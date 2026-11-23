@@ -5,12 +5,12 @@
 
 工程映射：MEM-04 遗忘修剪：修剪失效记忆与冗余。典出《宋史·选举志》汰冗员，义理出《道德经》「为学日益，为道日损」。
 
-边界：本件为算子骨架 v0——接口先立、实现随进化轮补齐；遵循元法第四条「只增不覆盖」，
+边界：本件为算子 v1——骨架桩已按命名映射补齐实现；遵循元法第四条「只增不覆盖」，
 方法只增不改名不删，行为变更走新版本；凭据不入档，宣称与事实分离。
 """
 
 class Sitai:
-    """司汰（SITAI）算子骨架 v0。"""
+    """司汰（SITAI）算子 v1。"""
 
     ANCHOR = "Ω₀⊂⊙∞⊂Ω｜DID-BR-000002"
     CODE = "SITAI"
@@ -18,6 +18,8 @@ class Sitai:
     def __init__(self, config=None):
         self.config = dict(config or {})
         self.events = []  # 只增不覆盖：会话内事件留痕
+        self.pruned_count = 0
+        self.kept_count = 0
 
     def describe(self):
         """构件名帖：名、代号、职责、铭文、体系锚。"""
@@ -31,9 +33,23 @@ class Sitai:
         }
 
     def prune(self, memories):
-        """汰沙存金：修剪失效与冗余，出保留清单（骨架桩：实现随进化轮补齐）。"""
-        raise NotImplementedError("SITAI.prune 骨架桩，候进化轮补齐")
+        """汰沙存金：剪失效与冗余，留有效唯一。"""
+        import json
+        seen = set()
+        kept = []
+        for m in memories:
+            if isinstance(m, dict) and m.get("valid") is False:
+                continue
+            key = json.dumps(m, sort_keys=True, ensure_ascii=False)
+            if key in seen:
+                continue
+            seen.add(key)
+            kept.append(m)
+        self.pruned_count += len(memories) - len(kept)
+        self.kept_count += len(kept)
+        self.events.append({"event": "prune", "pruned": len(memories) - len(kept)})
+        return kept
 
     def report(self):
-        """损而不匮：修剪账目留痕（骨架桩：实现随进化轮补齐）。"""
-        raise NotImplementedError("SITAI.report 骨架桩，候进化轮补齐")
+        """修剪台账。"""
+        return {"pruned": self.pruned_count, "kept": self.kept_count}
