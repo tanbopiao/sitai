@@ -68,6 +68,32 @@ class TestCe(unittest.TestCase):
         self.assertEqual(ce.summary(), {"prune": 2})
 
 
+class TestTamperEvidence(unittest.TestCase):
+    """篡改现形：台账只增不覆盖，任何对副本的篡改都必须现形。"""
+
+    def test_ledger_resists_external_tamper(self):
+        ce = Ce()
+        e1 = ce.record("prune", {"in": 3, "kept": 2})
+        e1["detail"]["in"] = 999          # 试图篡改已入册的记录
+        e1["action"] = "fake"
+        self.assertEqual(ce.replay()[0]["detail"]["in"], 3)   # 正本无损，篡改现形
+        self.assertEqual(ce.replay()[0]["action"], "prune")
+
+    def test_replay_copy_tamper_visible(self):
+        ce = Ce()
+        ce.record("prune", {"in": 1})
+        out = ce.replay()
+        out[0]["action"] = "篡改"
+        self.assertEqual(ce.replay()[0]["action"], "prune")
+
+    def test_seq_cannot_be_rewritten(self):
+        ce = Ce()
+        ce.record("prune", {})
+        ce.record("prune", {})
+        seqs = [e["seq"] for e in ce.replay()]
+        self.assertEqual(seqs, [1, 2])    # 序号连续，抽掉或改写即现形
+
+
 class TestFacade(unittest.TestCase):
     def setUp(self):
         self.op = Sitai()
@@ -91,6 +117,7 @@ class TestFacade(unittest.TestCase):
         self.assertEqual(self.op.ledger_summary(), {"prune": 2})
 
     def test_legacy_describe_unchanged(self):
+        """回归：骨架 v1 名帖字段与取值不变（回归用例）。"""
         d = self.op.describe()
         self.assertEqual(d["repo"], "sitai")
         self.assertEqual(d["code"], "SITAI")
@@ -98,6 +125,7 @@ class TestFacade(unittest.TestCase):
         self.assertTrue(d["anchor"].startswith("Ω₀⊂⊙∞⊂Ω"))
 
     def test_legacy_report_unchanged(self):
+        """回归：骨架 v1 prune/report 计数行为不变（回归用例）。"""
         self.op.prune([{"m": 1}, {"m": 1}, {"m": 2, "valid": False}, {"m": 3}])
         self.assertEqual(self.op.report(), {"pruned": 2, "kept": 2})
 

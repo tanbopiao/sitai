@@ -4,6 +4,7 @@
 一条不落、一条不改；台账只增不覆盖，随时回放。
 """
 
+import copy
 import time
 
 
@@ -23,14 +24,14 @@ class Ce:
             "detail": detail,
             "ts": time.strftime("%Y-%m-%dT%H:%M:%S+08:00", time.localtime()),
         }
-        self._entries.append(entry)
+        self._entries.append(copy.deepcopy(entry))
         return entry
 
     def replay(self, action=None):
         """回放：按动作过滤的流水副本（外部改不动正本）。"""
         if action is None:
-            return list(self._entries)
-        return [e for e in self._entries if e["action"] == action]
+            return copy.deepcopy(self._entries)
+        return copy.deepcopy([e for e in self._entries if e["action"] == action])
 
     def summary(self):
         """对账：各动作笔数。"""
